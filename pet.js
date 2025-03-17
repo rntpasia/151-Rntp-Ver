@@ -8,6 +8,30 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 console.log("✅ pet.js is loaded!");
 
+console.log("✅ supabase is loaded!");
+
+let user = await getUser();
+  if(!user){
+      alert("You must be logged in to access this page.");
+      window.location.href="index.html";
+  }
+
+async function getUser(){ //retrieves user id 
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+        return null;
+    }
+
+    localStorage.setItem("auth_id", data.user.id);
+    
+    return data.user;
+
+}
+
+if (!user.id){
+    console.log("No user ID");
+}
+
 // Fetch and display pets on page load
 document.addEventListener("DOMContentLoaded", fetchPets);
 
@@ -17,74 +41,34 @@ document.getElementById("pet-form").addEventListener("submit", async function (e
     console.log("🚀 Attempting to save pet...");
 
     // Get form values
+    let auth_id = localStorage.getItem("auth_id");
     const petName = document.getElementById("pet-name").value.trim();
     const breed = document.getElementById("breed").value.trim();
     const size = document.getElementById("size").value;
     const age = document.getElementById("age").value.trim();
     const ageUnit = document.getElementById("age-unit").value;
     const diet = document.getElementById("diet").value.trim();
-    const petImage = document.getElementById("photo").files[0];
 
     // Check required fields
-    if (!petName || !breed || !size || !age || !ageUnit || !diet || !petImage) {
+    if (!petName || !breed || !size || !age || !ageUnit || !diet) {
         alert("❌ Please fill in all fields.");
         return;
     }
-
-    console.log("🖼 Uploading image...");
-
-    // Create unique filename
-    const filePath = `pets/${Date.now()}_${petImage.name}`;
-
-    // Upload Image to Supabase Storage
-    const { data: imageData, error: imageError } = await supabase.storage
-        .from("pet-images")
-        .upload(filePath, petImage, {
-            contentType: petImage.type, // Ensuring correct content type
-            cacheControl: "3600",
-            upsert: false
-        });
-
-    if (imageError) {
-        console.error("❌ Image Upload Error:", imageError.message);
-        console.error("🔎 Full Error Object:", imageError);
-        alert("❌ Failed to upload pet image.");
-        return;
-    }
-
-    console.log("✅ Image uploaded successfully!");
-
-    // Get the public URL of the uploaded image
-    const { data } = supabase.storage
-        .from("pet-images")
-        .getPublicUrl(filePath);
-
-    const imageUrl = data.publicUrl;
-
-    if (!imageUrl) {
-        console.error("❌ Error retrieving public image URL.");
-        alert("❌ Failed to get image URL.");
-        return;
-    }
-
-    console.log("🌍 Public Image URL:", imageUrl);
-
-    console.log("📂 Saving pet data to database...");
 
     // Insert Pet Data into Supabase
     const { error: dbError } = await supabase
         .from("pets")
         .insert([
-            {
+            {   
+                auth_id: auth_id,
                 pet_name: petName,
                 breed: breed,
                 size: size,
                 age: parseInt(age),
                 age_unit: ageUnit,
                 diet: diet,
-                pet_photo: imageUrl
             }
-        ]);
+        ]).eq("id").single();
 
     if (dbError) {
         console.error("❌ Database Error:", dbError.message);
@@ -94,6 +78,7 @@ document.getElementById("pet-form").addEventListener("submit", async function (e
 
     console.log("✅ Pet saved successfully!");
     alert("✅ Pet saved successfully!");
+    window.location.href="home.html";
 
     // Clear form and refresh displayed pets
     document.getElementById("pet-form").reset();
@@ -115,29 +100,9 @@ async function fetchPets() {
     }
 
     console.log("✅ Pets fetched:", pets);
-
-    const petsContainer = document.getElementById("pets-container");
-    petsContainer.innerHTML = ""; // Clear previous pets
-
-    if (pets.length === 0) {
-        petsContainer.innerHTML = "<p>No pets found.</p>";
-        return;
-    }
-
-    pets.forEach(pet => {
-        const petCard = document.createElement("div");
-        petCard.classList.add("pet-card");
-        petCard.innerHTML = `
-            <img src="${pet.pet_photo}" alt="${pet.pet_name}" class="pet-image">
-            <h3>${pet.pet_name}</h3>
-            <p><strong>Breed:</strong> ${pet.breed}</p>
-            <p><strong>Size:</strong> ${pet.size}</p>
-            <p><strong>Age:</strong> ${pet.age} ${pet.age_unit}</p>
-            <p><strong>Diet:</strong> ${pet.diet}</p>
-        `;
-        petsContainer.appendChild(petCard);
-    });
 }
+
+
 
 // Go back function
 function goBack() {
