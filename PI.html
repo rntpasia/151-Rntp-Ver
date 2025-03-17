@@ -181,16 +181,13 @@
         <h2 class="h2">Personal Information</h2>
         <div class="form-container">
             <form>
-                <label for="first-name">First Name:</label>
-                <input type="text" id="first-name" value="">
-    
-                <label for="last-name">Last Name:</label>
-                <input type="text" id="last-name" value="">
+                <label for="first-name">Name:</label>
+                <input type="text" id="username">
     
                 <label for="phone-number">Contact Number:</label>
-                <input type="tel" id="phone-number"   name="phone-number" required maxlength="11">
+                <input type="tel" id="phone_number"   name="phone-number" required maxlength="11">
     
-                <button type="submit" class="save-button">Save</button>
+                <button id="submit" class="save-button">Save</button>
             </form>
         </div>
 
@@ -230,5 +227,6 @@
                 });
             });
         </script>
+        <script type="module" src="manage.js"></script>
 </body>
 </html>
